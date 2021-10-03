@@ -8,14 +8,16 @@ module image_enumeration_m
  
   interface caf_num_images
 
-    pure integer module function num_images_team(team)
+    pure module function num_images_team(team) result(image_count)
       implicit none
       type(team_type), intent(in), optional :: team
+      integer image_count
     end function
 
-    pure integer module function num_images_team_number(team_number)
+    pure module function num_images_team_number(team_number) result(image_count)
       implicit none
       integer, intent(in) :: team_number
+      integer image_count
     end function
 
   end interface

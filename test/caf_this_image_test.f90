@@ -24,7 +24,7 @@ contains
         associate(me => caf_this_image(), ni => caf_num_images())
           image_numbers = [(merge(0, me, me/=i), i = 1, ni)]
           call caf_co_sum(image_numbers)
-          result_ = assert_that(all(image_numbers == [(i, i = 1, ni)]), "incorrect image set")
+          result_ = assert_that(all(image_numbers == [(i, i = 1, ni)]) .and. size(image_numbers)>0, "correct image set")
         end associate
     end function
 
