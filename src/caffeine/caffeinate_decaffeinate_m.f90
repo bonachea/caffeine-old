@@ -3,13 +3,16 @@ module caffeinate_decaffeinate_m
 
   private
   public :: caffeinate, decaffeinate
+  public :: this_image_, num_images_ ! public because the module image_enumeration needs access
+
+  integer :: this_image_, num_images_
 
   interface
 
-    module subroutine caffeinate
+    module subroutine caffeinate()
     end subroutine
 
-    module subroutine decaffeinate
+    module subroutine decaffeinate() bind(c, name='caf_decaffienate')
     end subroutine
 
   end interface
