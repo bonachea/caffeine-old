@@ -8,7 +8,7 @@ program hello_world
 
   call sleep(1) ! gfortran extension, very temporary
   print *, "hello from project caffeine image ", this_image(), " of ", num_images()
-  call sleep(1)
+  call sleep(1) ! enough time to send signals and make sure all images terminate
 
   call decaffeinate()
 end program 

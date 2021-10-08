@@ -70,6 +70,8 @@ detect_img1_death (void * unused)
 			if (module.termination_begun) {
 				break;
 			} else {
+				fprintf(stderr, "[Caffeine] Image 1 died, terminating.\n");
+				fflush (stderr);
 				exit (EXIT_FAILURE);
 			}
 
@@ -110,13 +112,13 @@ signal_action (int signo, siginfo_t * info, void * context)
 			exit (EXIT_FAILURE);
 		}
 
-		if (WIFEXITED(wstatus)) {
+		if (WIFEXITED(wstatus) || WIFSIGNALED(wstatus)) {
 			// A child process terminated.
 			// That's okay if we've begun normal termination.
 			if (module.termination_begun) {
 				return;
 			} else {
-				fprintf(stderr, "[Caffeine] A child process terminated unexpectedly." );
+				fprintf(stderr, "[Caffeine] A child process terminated unexpectedly.\n" );
 				fflush (stderr);
 				exit (EXIT_FAILURE);
 			}
