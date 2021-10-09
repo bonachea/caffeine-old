@@ -26,7 +26,7 @@ cafc_vars_t module = {
 	.termination_begun = false,
 };
 
-static noreturn void 
+noreturn void 
 fatal_error (const char * msg) 
 {
 	/*
@@ -34,7 +34,7 @@ fatal_error (const char * msg)
 		call this function to make sure that any spawned child processes get cleaned up.
 	*/
 
-	const char * safemsg = msg ? msg : "";
+	// const char * safemsg = msg ? msg : "";
 
 	if (module.child_pids) {
 		for (size_t i = 0; i < module.nchildprocs; i++) {
@@ -45,7 +45,7 @@ fatal_error (const char * msg)
 	}
 
 
-	fprintf (stderr, "[Caffeine] %s: %s\n", safemsg, strerror(errno));
+	// fprintf (stderr, "[Caffeine] %s: %s\n", safemsg, strerror(errno));
 	fflush  (stderr);
 	exit    (EXIT_FAILURE);
 }
