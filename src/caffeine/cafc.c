@@ -13,12 +13,12 @@
 #include <sys/wait.h>
 
 typedef struct {
-	atomic_bool  termination_begun;
-	pid_t       *child_pids;
-	int          nchildprocs;
-	int          parent_pipe; 
-	pid_t        parent_pid;
-	pthread_t    pipe_thread;
+	atomic_bool  termination_begun; // all images
+	pid_t       *child_pids;        // image 1 only
+	int          nchildprocs;       // image 1 only
+	int          parent_pipe;       // child images only
+	pid_t        parent_pid;        // child images only
+	pthread_t    pipe_thread;       // child images only
 } cafc_vars_t;
 
 
@@ -188,6 +188,13 @@ cafc_fork_images(int num_images)
 				fflush (stderr);	
 				exit   (EXIT_FAILURE);
 			}
+
+			// Since we get a copy of the parent process's memory, 
+			// we may have a half-constructed list of child processes.
+			// We don't need that, so get rid of it.
+			free (module.child_pids);
+			module.child_pids  = 0;
+			module.nchildprocs = 0;
 
 			return this_image;
 
