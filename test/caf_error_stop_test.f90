@@ -29,7 +29,7 @@ program caf_error_stop_test
     if (exit_status_character == 0) then
       write(error_unit, *) "----> Error stop with integer code failed to return a non-zero exit_status. <----"
     else
-      write(output_unit, *) "----> Error stop with character code returned a non-zero exit_status as expected. <----"
+      write(output_unit, *) "----> Error stop with integer code returned a non-zero exit_status as expected. <----"
     end if
 
   end block character_stop_code
