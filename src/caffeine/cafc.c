@@ -26,7 +26,7 @@ cafc_vars_t module = {
 	.termination_begun = false,
 };
 
-noreturn void 
+static noreturn void 
 fatal_error (const char * msg) 
 {
 	/*
@@ -229,4 +229,3 @@ cafc_begin_termination()
 	*/
 	module.termination_begun = true;
 }
-
