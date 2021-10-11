@@ -12,6 +12,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+/*
+	Structure to hold the "module variables" needed by the functions in this file. 
+	C of course doesn't actually have modules, but using a struct with a single instance
+	provides some approximation for them.
+*/
 typedef struct {
 	atomic_bool  termination_begun; // all images
 	pid_t       *child_pids;        // image 1 only
@@ -21,7 +26,6 @@ typedef struct {
 	pthread_t    pipe_thread;       // child images only
 } cafc_vars_t;
 
-
 cafc_vars_t module = {
 	.termination_begun = false,
 };
@@ -30,8 +34,12 @@ static noreturn void
 fatal_error (const char * msg) 
 {
 	/*
-		If something goes horribly wrong at any stage in the image creation process, 
-		call this function to make sure that any spawned child processes get cleaned up.
+		If something goes wrong during the the image creation process, call this function to 
+		make sure that any spawned child processes get cleaned up.
+
+		This function should only be called from `cafc_fork_images`. If `cafc_fork_images`
+		returns successfully, there's no need to call this, as all processes will get cleaned
+		up correctly if any of them crash.
 	*/
 
 	const char * safemsg = msg ? msg : "";
@@ -55,12 +63,24 @@ detect_img1_death (void * unused)
 {
 	/*
 		This function (run in a background thread) monitors for the parent process's death.
-		That thread should only exist for child processes (this_image() > 1)
+		That thread should only exist for child processes (this_image() > 1).
+
+		The method used to detect when the parent process has died is as follows:
+		A pipe exists between the parent (image 1) and the child process (image N where N > 1).
+		The child process (again - in a background thread) does a blocking read on that pipe.
+		The parent never writes anything to that pipe, so the read should block forever. 
+		However, if the parent process dies, the OS will close the pipe and the blocking read
+		will return "end of file" in the child. The child can then check whether parent death
+		was expected or not (i.e. have we already begun "normal termination"). If the parent 
+		process dies unexpectedly, we treat that as "error termination" (to use the language
+		of the Fortran standard). 
 	*/
 	char useless;
 
+	// Loop in case the read call gets interrupted by a signal, i.e. EINTR
 	while (1) {
 		errno = 0;
+		// Blocking read call
 		const ssize_t rc = read (module.parent_pipe, &useless, 1);
 		
 		if (rc == 0) {
@@ -76,7 +96,8 @@ detect_img1_death (void * unused)
 			}
 
 		} else if (rc == -1 && errno != EINTR) {
-			// This shouldn't ever happen... Right?... Right?
+			// The read failed for some reason other than the receipt of a signal (EINTR).
+			// This shouldn't ever happen, but if it does, let's hear about it.
 
 			fprintf(stderr, "[Caffeine] detect_img1_death: %s\n", strerror(errno));
 			fflush (stderr);
@@ -84,6 +105,8 @@ detect_img1_death (void * unused)
 
 		} else {
 			// Oops, we actually read data...
+			// This means the fortran programmer used a hard coded I/O unit number, and it collided with the
+			// file descriptor used for our pipe
 
 			fprintf(stderr, "[Caffeine] detect_img1_death: conflict detected between a file descriptor used by Fortran code, "
 					"and one internal to Caffeine. Probable solution: use `newunit=` in all Fortran open statements, "
@@ -100,13 +123,25 @@ detect_img1_death (void * unused)
 void 
 signal_action (int signo, siginfo_t * info, void * context)
 {
+	/*
+		Signal handler for the parent process.
+		The means by which the child processes detect the death of the parent process was explained
+		in the comment associated with `detect_img1_death`, but this function is what allows the 
+		parent process (image 1) to monitor the children.
+
+		If a child process dies, the parent will receive SIGCHLD from the kernel. 
+		If "normal termination" has already begun, then that's fine, but if it hasn't, then the child
+		crashed, and we treat it as "error termination".
+	*/
+
 	if (signo == SIGCHLD) {
 		int wstatus;
 		errno  = 0;
 		int rc = waitpid (info->si_pid, &wstatus, 0);
 
 		if (rc == -1) {
-			// This should never happen, but might as well produce a message if it does.
+			// `waitpid` failed.
+			// This should never happen, but we might as well produce a message if it does.
 			fprintf (stderr, "[Caffeine] signal_action/waitpid: %s \n", strerror(errno));
 			fflush  (stderr);
 			exit (EXIT_FAILURE);
@@ -118,6 +153,7 @@ signal_action (int signo, siginfo_t * info, void * context)
 			if (module.termination_begun) {
 				return;
 			} else {
+				// Not okay, error termination.
 				fprintf(stderr, "[Caffeine] A child process terminated unexpectedly.\n" );
 				fflush (stderr);
 				exit (EXIT_FAILURE);
@@ -149,6 +185,7 @@ cafc_fork_images(int num_images)
 	module.parent_pid = getpid();
 
 	// Set up our signal handler for the parent
+	// This allows image 1 to detect if other images die unexpectedly (see `signal_action`).
 	struct sigaction action_caffeine = { .sa_flags = SA_SIGINFO, .sa_sigaction = &signal_action  };
 
 	if (0 != sigaction(SIGCHLD, &action_caffeine, 0 )) {
@@ -160,8 +197,10 @@ cafc_fork_images(int num_images)
 
 		int    this_image = i+2; 
 					
-		int    pipe_fds[2]; // a pipe, as part of our parent-death-detection strategy.
+		int    pipe_fds[2]; 
 
+		// See `detect_img1_death` for an explanation of how the child processes monitor for the unexpected
+		// termination of image1... A pipe is involved (one per child process). 
 		if (0 != pipe (pipe_fds)) 
 			fatal_error("caf_fork_images/pipe");
 
@@ -225,6 +264,7 @@ void
 cafc_begin_termination()
 {
 	/*
+		Begins "normal termination". 
 		After this function has been called, the death of a child process is not considered to be abnormal.
 	*/
 	module.termination_begun = true;
