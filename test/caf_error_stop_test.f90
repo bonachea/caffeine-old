@@ -1,37 +1,45 @@
-program caf_error_stop_test
-  use iso_fortran_env, only : error_unit, output_unit
-  !! Test error termination
-  implicit none
-  integer exit_status_integer, exit_status_character
+module caf_error_stop_test
+    use vegetables, only: test_item_t, describe, result_t, it, assert_that
 
-  integer_stop_code: block 
+    implicit none
+    private
+    public :: test_caf_this_image
 
-    call execute_command_line( &
-      command = "fpm run --example error_stop_integer_code > /dev/null 2>&1", &
-      wait = .true., &
-      exitstat = exit_status_integer &
-    )
-    if (exit_status_integer == 0) then
-      write(error_unit, *) "----> Error stop with character code failed to return a non-zero exit_status. <----"
-    else
-      write(output_unit, *) "----> Error stop with character code returned a non-zero exit_status as expected. <----"
-    end if
+contains
+    function test_caf_this_image() result(tests)
+        type(test_item_t) :: tests
 
-  end block integer_stop_code
+        tests = describe( &
+                "A program that executes the caf_error_stop function", &
+                [ it("exits with a non-zero exitstat when stop code is an integer", check_integer_stop_code) &
+                 ,it("exits with a non-zero exitstat when stop code is an character", check_character_stop_code) &
+                ])
+    end function
 
-  character_stop_code: block 
+    function check_integer_stop_code() result(result_)
+        type(result_t) :: result_
+        integer exit_status
 
-    call execute_command_line( &
-      command = "fpm run --example error_stop_character_code > /dev/null 2>&1", &
-      wait = .true., &
-      exitstat = exit_status_character &
-    )
-    if (exit_status_character == 0) then
-      write(error_unit, *) "----> Error stop with integer code failed to return a non-zero exit_status. <----"
-    else
-      write(output_unit, *) "----> Error stop with integer code returned a non-zero exit_status as expected. <----"
-    end if
+        call execute_command_line( &
+          command = "fpm run --example error_stop_integer_code > /dev/null 2>&1", &
+          wait = .true., &
+          exitstat = exit_status &
+        )   
+        result_ = assert_that(exit_status /= 0)
 
-  end block character_stop_code
+    end function
 
-end program caf_error_stop_test
+    function check_character_stop_code() result(result_)
+        type(result_t) :: result_
+        integer exit_status
+
+        call execute_command_line( &
+          command = "fpm run --example error_stop_character_code > /dev/null 2>&1", &
+          wait = .true., &
+          exitstat = exit_status &
+        )   
+        result_ = assert_that(exit_status /= 0)
+
+    end function
+
+end module caf_error_stop_test
