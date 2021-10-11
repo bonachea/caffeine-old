@@ -5,6 +5,8 @@ program main
     call run()
 contains
     subroutine run()
+        use caf_error_stop_test, only: &
+                caf_error_stop_caf_this_image => test_caf_this_image
         use caf_num_images_test, only: &
                 caf_num_images_caf_num_images => test_caf_num_images
         use caf_this_image_test, only: &
@@ -12,10 +14,11 @@ contains
         use vegetables, only: test_item_t, test_that, run_tests
 
         type(test_item_t) :: tests
-        type(test_item_t) :: individual_tests(2)
+        type(test_item_t) :: individual_tests(3)
 
-        individual_tests(1) = caf_num_images_caf_num_images()
-        individual_tests(2) = caf_this_image_caf_this_image()
+        individual_tests(1) = caf_error_stop_caf_this_image()
+        individual_tests(2) = caf_num_images_caf_num_images()
+        individual_tests(3) = caf_this_image_caf_this_image()
         tests = test_that(individual_tests)
 
         call run_tests(tests)

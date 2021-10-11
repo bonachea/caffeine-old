@@ -42,7 +42,7 @@ fatal_error (const char * msg)
 		up correctly if any of them crash.
 	*/
 
-	const char * safemsg = msg ? msg : "";
+ const char * safemsg = msg ? msg : "";
 
 	if (module.child_pids) {
 		for (size_t i = 0; i < module.nchildprocs; i++) {
@@ -269,4 +269,3 @@ cafc_begin_termination()
 	*/
 	module.termination_begun = true;
 }
-
