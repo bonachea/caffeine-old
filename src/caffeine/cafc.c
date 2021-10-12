@@ -11,6 +11,16 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/mman.h>
+
+/* 
+	It's annoyingly common for the constants defined in e.g. the POSIX standard
+	to actually be macros instead of real constants. As such, there's often
+	no symbol for the linker to use to look up the value. So here we'll grab
+	any of the constants that might be needed in Fortran code, and give them 
+	symbols that we can access via bind(C).
+*/
+const int C_SC_PAGESIZE   =  _SC_PAGESIZE;
 
 /*
 	Structure to hold the "module variables" needed by the functions in this file. 
@@ -269,3 +279,83 @@ cafc_begin_termination()
 	*/
 	module.termination_begun = true;
 }
+
+
+
+int 
+cafc_sharedmem_create(const char * name)
+{
+	/*
+		Creates a shared memory region with the given name.
+		The region is opened with read/write access, and it's permissions
+		are: owner can read/write, group and others have no access.
+		Returns a file descriptor on success, or -1 on failure
+	*/
+	return shm_open(name, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
+}
+
+int 
+cafc_sharedmem_open(const char * name)
+{
+	/*
+		Opens an existing shared memory region with the given name, for read/write access.
+		Returns a file descriptor on success, or -1 on failure
+	*/
+	return shm_open(name, O_RDWR, 0);
+}
+
+void 
+cafc_get_errmsg(char * buf, size_t bufsz)
+{
+	/*
+		POSIX functions tend to set errno to some value that indicates what went wrong,
+		in the event of a failure. Textual representations of those error values 
+		can be retrieved with `strerror`. To get those strings back into Fortran,
+		this function copies the result of strerror into a user-provided buffer.
+	*/
+	char * msg = strerror(errno);
+
+	const size_t len    = strlen(msg);
+	const size_t cpylen = len < bufsz ? len : bufsz;
+
+	memcpy (buf, msg, cpylen);
+	buf[bufsz-1] = 0; // ensure it's null-terminated
+}
+
+int 
+cafc_ftruncate(int fd, size_t sz)
+{
+	/*
+		Truncates or null-pads a file to specified size.
+		We use this for setting the size of a shared memory region.
+		Unfortunately the second argument of the actual ftruncate function has the
+		type "off_t", which may vary depending on platform.
+	*/
+	return ftruncate(fd,sz);
+}
+
+void *
+cafc_mmap(int fd, size_t length)
+{
+	/*
+		Map the shared memory region into our address space.
+		Unfortuantely the last argument to mmap is of type `off_t`, which may
+		vary depending on platform, so we have to call it from C.
+		We also can't do pointer comparison in Fortran, so if mmap gives us
+		`MAP_FAILED` we need to return NULL ourselves.
+	*/
+	void * addr =  mmap(0, length, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (addr == MAP_FAILED) return NULL;
+}
+
+long long
+cafc_getpid()
+{
+	/*
+		Get the process ID. Unfortunately, getpid returns a `pid_t`, which
+		may vary depending on platform.
+	*/
+	return getpid();
+}
+
+

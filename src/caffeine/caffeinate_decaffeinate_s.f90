@@ -4,8 +4,22 @@ submodule(caffeinate_decaffeinate_m) caffeinate_decaffeinate_s
     use sync_m, only: caf_sync_all
     implicit none
 
+    integer, bind(c, name='C_SC_PAGESIZE') :: C_SC_PAGESIZE
+
 contains
     module procedure caffeinate
+
+        determine_page_size: block
+            interface
+                function posix_sysconf (what) bind(C, name='sysconf')
+                    import :: c_int, c_long
+                    integer(c_int)  :: what
+                    integer(c_long) :: sysconf
+                end function
+            end interface
+
+            page_size = posix_sysconf(C_SC_PAGESIZE)
+        end block determine_page_size
 
         determine_num_images: block
             integer            :: stat
