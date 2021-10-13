@@ -10,7 +10,7 @@ submodule(coarray_m) coarray_s
     integer(int64) :: coarray_counter = 0
     integer(c_int) :: process_id
 
-    type, extends(coarray_t) :: posix_coarray_t
+    type :: posix_coarray_t
         type(c_ptr)       :: base
         integer(c_size_t) :: length
     end type
@@ -90,19 +90,24 @@ contains
         if (caf_this_image() == 1) rtncode = sharedmem_unlink(shm_name)
 
         ! return the start of the block of memory belonging to this process
-        caf_allocate = posix_coarray_t(c_loc(shmptr(1,caf_this_image())), sharedmem_addr, total_bytes)
+        return_data: block
+            type(coarray_t)       :: returnval
+            type(posix_coarray_t) :: reserved_data  
+            reserved_data = posix_coarray_t(sharedmem_addr, total_bytes) 
+            returnval%mem = c_loc(shmptr(1,caf_this_image()))
+            returnval%reserved = transfer(reserved_data, returnval%reserved, size(returnval%reserved))
+            caf_allocate  = returnval
+        end block return_data
     end procedure
 
     module procedure caf_deallocate
         integer(c_int) :: rtncode
+        type(posix_coarray_t) :: details
 
-        select type (coarray)
-            type is (posix_coarray_t)
-                rtncode = munmap(coarray%base, coarray%length)
-                if (rtncode == -1) call fatal_syscall_error('munmap')
-            class default
-                call caf_error_stop('Invalid object provided to caf_deallocate') 
-        end select
+        details = transfer (coarray%reserved, details)
+
+        rtncode = munmap(details%base, details%length)
+        if (rtncode == -1) call fatal_syscall_error('munmap')
     end procedure
 
 end submodule
