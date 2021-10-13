@@ -11,11 +11,6 @@ program example_coarray
 
     a_shape = [3,3]
 
-    call caf_sync_all()
-    call caf_sync_all()
-    call caf_sync_all()
-    call caf_sync_all()
-
     co = caf_allocate(storage_size(a), a_shape)
     call c_f_pointer(co%mem, a, a_shape)
 

@@ -39,7 +39,6 @@ contains
 
         character(kind=c_char, len=255) :: shm_name
 
-
         ! TODO make sure the array_shape provided contains only positive values
 
         bytes_per_image = get_bytes_per_image(array_shape, element_storage_size)
