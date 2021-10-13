@@ -2,24 +2,17 @@ submodule(caffeinate_decaffeinate_m) caffeinate_decaffeinate_s
     use iso_fortran_env, only: error_unit
     use iso_c_binding
     use sync_m, only: caf_sync_all
+    use posix_interfaces_m
     implicit none
-
-    integer, bind(c, name='C_SC_PAGESIZE') :: C_SC_PAGESIZE
 
 contains
     module procedure caffeinate
 
-        determine_page_size: block
-            interface
-                function posix_sysconf (what) bind(C, name='sysconf')
-                    import :: c_int, c_long
-                    integer(c_int)  :: what
-                    integer(c_long) :: sysconf
-                end function
-            end interface
+        ! determine system page size
+        page_size = posix_sysconf(C_SC_PAGESIZE)
 
-            page_size = posix_sysconf(C_SC_PAGESIZE)
-        end block determine_page_size
+        ! determine PID of image 1
+        img1_pid  = getpid()
 
         determine_num_images: block
             integer            :: stat
@@ -34,7 +27,7 @@ contains
 
                 if (stat /= 0) then
                     write (error_unit, '(A)') &
-                        '[Caffeine] Warning: environment varialbe "CAF_NUM_IMAGES" is present, &
+                        '[Caffeine] Warning: environment variable "CAF_NUM_IMAGES" is present, &
                         & but its value is invalid. Falling back to default number of images.'
                     num_images_ = 0
                 end if
@@ -47,6 +40,19 @@ contains
                 num_images_ = 4
             end if
         end block determine_num_images
+
+        create_barrier: block
+            integer rtncode
+            type(c_ptr) :: mmap_ptr 
+
+            mmap_ptr = mmap(-1, BARRIER_SZ)
+            if (.not. c_associated(mmap_ptr)) call fatal_syscall_error('caffeinate/mmap') 
+
+            rtncode = barrier_init(mmap_ptr, num_images_)
+            if (0 /= rtncode) call fatal_syscall_error('barrier_init')
+
+            sync_all_barrier = mmap_ptr
+        end block create_barrier
 
         create_images: block
             interface

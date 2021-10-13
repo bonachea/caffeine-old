@@ -4,10 +4,9 @@ module caffeinate_decaffeinate_m
 
   private
   public :: caffeinate, decaffeinate
-  public :: this_image_, num_images_, page_size
+  public :: this_image_, num_images_
 
   integer :: this_image_, num_images_
-  integer(c_size_t) :: page_size
 
   interface
 

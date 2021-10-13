@@ -20,7 +20,9 @@
 	any of the constants that might be needed in Fortran code, and give them 
 	symbols that we can access via bind(C).
 */
-const int C_SC_PAGESIZE   =  _SC_PAGESIZE;
+const int    C_SC_PAGESIZE  =  _SC_PAGESIZE;
+const int    BARRIER_RTN    =  PTHREAD_BARRIER_SERIAL_THREAD;
+const size_t BARRIER_SZ     =  sizeof(pthread_barrier_t);
 
 /*
 	Structure to hold the "module variables" needed by the functions in this file. 
@@ -342,9 +344,12 @@ cafc_mmap(int fd, size_t length)
 		Unfortuantely the last argument to mmap is of type `off_t`, which may
 		vary depending on platform, so we have to call it from C.
 		We also can't do pointer comparison in Fortran, so if mmap gives us
-		`MAP_FAILED` we need to return NULL ourselves.
+		`MAP_FAILED` we need to return NULL ourselves. Lastly, if -1 is
+        passed as the file descriptor, create an anonymous mapping (not backed
+        by a file or a posix shared memory region.
 	*/
-	void * addr =  mmap(0, length, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    const int flags = (fd == -1 ? (MAP_SHARED | MAP_ANON) : MAP_SHARED);
+	void * addr =  mmap(0, length, PROT_READ|PROT_WRITE, flags, fd, 0);
 	if (addr == MAP_FAILED) return NULL;
 }
 
@@ -358,4 +363,23 @@ cafc_getpid()
 	return getpid();
 }
 
-
+int 
+cafc_shared_barrier_init(pthread_barrier_t * barrier, int count)
+{
+	/*
+		Creates a pthread barrier that can be used to implement sync_all.
+	*/
+	pthread_barrierattr_t attrs;
+	int rc = pthread_barrierattr_setpshared(&attrs, PTHREAD_PROCESS_SHARED);
+	if (rc != 0) {
+		errno = rc;
+		return rc;
+	}
+	const unsigned ucount = count;
+	rc = pthread_barrier_init(barrier, &attrs, ucount);
+	if (rc != 0) {
+		errno = rc;
+		return rc;
+	}
+	return 0;
+}

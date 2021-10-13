@@ -3,7 +3,8 @@ submodule(coarray_m) coarray_s
     use iso_c_binding
     use sync_m, only: caf_sync_all
     use image_enumeration_m, only: caf_this_image, caf_num_images
-    use caffeinate_decaffeinate_m, only: page_size
+    use posix_interfaces_m
+    use error_termination_m, only: caf_error_stop
     implicit none
 
     integer(int64) :: coarray_counter = 0
@@ -13,56 +14,6 @@ submodule(coarray_m) coarray_s
         type(c_ptr)       :: base
         integer(c_size_t) :: length
     end type
-
-    interface
-        function getpid() bind(C, name='cafc_getpid')
-            import :: c_int
-            integer(c_int) :: getpid
-        end function
-        subroutine c_errmsg(buffer, buffer_len) bind(C, name='cafc_get_errmsg')
-            import :: c_char, c_size_t, c_ptr
-            type(c_ptr),       intent(in)       :: buffer
-            integer(c_size_t), intent(in),   value :: buffer_len
-        end subroutine
-        function close_fd(fd) bind(C, name='close')
-            import :: c_int
-            integer(c_int), intent(in), value :: fd
-            integer(c_int)                    :: close_fd
-        end function
-        function mmap(fd, sz) bind(C, name='cafc_mmap')
-            import :: c_int, c_size_t, c_ptr
-            integer(c_int),    intent(in), value :: fd
-            integer(c_size_t), intent(in), value :: sz
-            type(c_ptr)                          :: mmap
-        end function
-        function munmap(addr, sz) bind(C, name='munmap')
-            import :: c_int, c_size_t, c_ptr
-            type(c_ptr),       intent(in), value :: addr
-            integer(c_size_t), intent(in), value :: sz
-            integer(c_int)                       :: munmap
-        end function
-        function ftruncate(fd, sz) bind(C, name='cafc_ftruncate')
-            import :: c_int, c_size_t
-            integer(c_int),    intent(in), value    :: fd
-            integer(c_size_t), intent(in), value    :: sz
-            integer(c_int)                          :: ftruncate
-        end function
-        function sharedmem_create(shm_name) bind(C, name='cafc_sharedmem_create')
-            import :: c_int, c_char, c_ptr
-            character(kind=c_char,len=1), intent(in) :: shm_name(*)
-            integer(c_int)                           :: sharedmem_create
-        end function
-        function sharedmem_open(shm_name) bind(C, name='cafc_sharedmem_open')
-            import :: c_int, c_char, c_ptr
-            character(kind=c_char,len=1), intent(in) :: shm_name(*)
-            integer(c_int)                           :: sharedmem_open
-        end function
-        function sharedmem_unlink(shm_name) bind(C, name='shm_unlink')
-            import :: c_int, c_char, c_ptr
-            character(kind=c_char,len=1), intent(in) :: shm_name(*)
-            integer(c_int)                           :: sharedmem_unlink
-        end function
-    end interface
 
 contains
 
@@ -79,17 +30,6 @@ contains
         get_bytes_per_image = page_size * (1+(get_bytes_per_image/page_size)) ! round up to page size
     end function
 
-    subroutine fatal_syscall_error(message)
-        character(len=*), intent(in) :: message
-        character(len=1, kind=c_char), target :: errmsg_c
-        character(len=:), allocatable         :: errmsg_f
-
-        call c_errmsg (c_loc(errmsg_c), len(errmsg_c,kind=c_size_t))
-        errmsg_f = message // ': ' // trim(errmsg_c)
-
-        call caf_error_stop (errmsg_f)
-    end subroutine
-
     module procedure caf_allocate
         integer(c_size_t) :: bytes_per_image, total_bytes
 
@@ -97,7 +37,7 @@ contains
         type(c_ptr) :: sharedmem_addr
         integer(int8), pointer :: shmptr(:,:)
 
-        character(kind=c_char, len=255), allocatable :: shm_name
+        character(kind=c_char, len=255) :: shm_name
 
 
         ! TODO make sure the array_shape provided contains only positive values
@@ -108,7 +48,9 @@ contains
         ! Figure out name of the shared memory region we're going to create
         ! This might need to become more sophisticated, I'm not sure.
         coarray_counter = coarray_counter + 1
-        write (shm_name,"(A,I0,'_',I0)") '/caf_', getpid(), coarray_counter
+        write (shm_name,"(A,I0,'_',I0)") '/caf_', img1_pid, coarray_counter
+        shm_name = trim(shm_name) // c_null_char
+        
 
         ! image one creates the shared memory region and sets it to the correct size
         if (caf_this_image() == 1) then
@@ -146,7 +88,7 @@ contains
         call caf_sync_all() 
 
         ! unlink the shared memory region so that it gets deallocated when the memory is unmapped
-        if (caf_this_image() == 1) rtncode = sharedmem_unlink(shm_name);
+        if (caf_this_image() == 1) rtncode = sharedmem_unlink(shm_name)
 
         ! return the start of the block of memory belonging to this process
         caf_allocate = posix_coarray_t(c_loc(shmptr(1,caf_this_image())), sharedmem_addr, total_bytes)
