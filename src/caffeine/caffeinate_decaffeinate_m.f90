@@ -1,13 +1,10 @@
 module caffeinate_decaffeinate_m
   use iso_c_binding, only: c_size_t
+  use team_type_m, only: team_type
   implicit none
 
   private
-  public :: caffeinate, decaffeinate
-  public :: this_image_, num_images_
-
-  integer :: this_image_, num_images_
-
+  public :: caffeinate, decaffeinate, default_team
   interface
 
     module subroutine caffeinate()
@@ -17,5 +14,7 @@ module caffeinate_decaffeinate_m
     end subroutine
 
   end interface
+
+  type(team_type), target :: default_team
 
 end module caffeinate_decaffeinate_m

@@ -9,8 +9,6 @@ module posix_interfaces_m
     integer(c_long_long)  :: img1_pid
     integer(c_long)       :: page_size
 
-    type(c_ptr) :: sync_all_barrier
-
     interface
         function posix_sysconf (what) bind(C, name='sysconf')
             import :: c_int, c_long
