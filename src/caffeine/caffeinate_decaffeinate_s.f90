@@ -11,6 +11,7 @@ contains
 
         current_team => default_team 
         default_team%parent_team => null()
+        default_team%sibling_id = 0
 
         ! determine system page size
         page_size = posix_sysconf(C_SC_PAGESIZE)

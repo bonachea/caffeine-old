@@ -8,6 +8,7 @@ module team_type_m
   type team_type
     integer     :: num_images_
     integer     :: this_image_
+    integer     :: sibling_id
     type(c_ptr) :: barrier 
     type(team_type), pointer :: parent_team
   end type

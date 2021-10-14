@@ -89,5 +89,27 @@ contains
         call caf_error_stop (errmsg_f)
     end subroutine
 
+    subroutine get_shm_path(output_str, suffix)
+        use team_type_m, only: team_type, current_team
+        use iso_c_binding, only: c_char
+        character(len=*,kind=c_char),   intent(in)  :: suffix
+        character(len=255,kind=c_char), intent(out) :: output_str
+        type(team_type), pointer :: team_stackptr
+        
+        team_stackptr => current_team
+
+        write(output_str,"(A,I0,'_')") '/caf', img1_pid 
+
+        walk_team_stack: do
+            write(output_str,"(A,'_',I0)") trim(output_str), team_stackptr%sibling_id
+            if (associated(team_stackptr%parent_team)) then
+                team_stackptr => team_stackptr%parent_team
+            else
+                exit walk_team_stack
+            end if
+        end do walk_team_stack
+
+        write(output_str, "(A,'_',A)") trim(output_str), trim(suffix) // c_null_char
+    end subroutine
 
 end module

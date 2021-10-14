@@ -48,8 +48,11 @@ contains
         ! Figure out name of the shared memory region we're going to create
         ! This might need to become more sophisticated, I'm not sure.
         coarray_counter = coarray_counter + 1
-        write (shm_name,"(A,I0,'_',I0)") '/caf_', img1_pid, coarray_counter
-        shm_name = trim(shm_name) // c_null_char
+        block
+            character(kind=c_char,len=30) :: pathsuf
+            write (pathsuf,"('co',I0)") coarray_counter
+            call get_shm_path(shm_name, trim(pathsuf))
+        end block 
         
 
         ! image one creates the shared memory region and sets it to the correct size
