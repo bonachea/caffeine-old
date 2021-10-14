@@ -7,10 +7,10 @@ module caffeinate_decaffeinate_m
   public :: caffeinate, decaffeinate, default_team
   interface
 
-    module subroutine caffeinate()
+    module subroutine caffeinate() bind(c)
     end subroutine
 
-    module subroutine decaffeinate() 
+    module subroutine decaffeinate() bind(c)
     end subroutine
 
   end interface

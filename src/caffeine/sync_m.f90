@@ -4,7 +4,7 @@ module sync_m
     public :: caf_sync_all
     
     interface
-        module subroutine caf_sync_all()
+        module subroutine caf_sync_all() bind(c)
         end subroutine
     end interface
 end module sync_m
