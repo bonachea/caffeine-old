@@ -5,6 +5,7 @@ module caffeine_m
   use caffeinate_decaffeinate_m, only : caffeinate, decaffeinate
   use coarray_m, only : caf_allocate, caf_deallocate, coarray_t, caf_getptr
   use sync_m, only: caf_sync_all
+  use team_type_m, only: caf_form_team, caf_change_team, caf_end_team, team_type
 
   implicit none
 end module caffeine_m

@@ -98,7 +98,7 @@ contains
         
         team_stackptr => current_team
 
-        write(output_str,"(A,I0,'_')") '/caf', img1_pid 
+        write(output_str,"(A,I0)") '/caf', img1_pid 
 
         walk_team_stack: do
             write(output_str,"(A,'_',I0)") trim(output_str), team_stackptr%sibling_id

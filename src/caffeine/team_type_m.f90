@@ -3,7 +3,7 @@ module team_type_m
   implicit none
 
   private
-  public :: team_type, caf_form_team, current_team
+  public :: team_type, caf_form_team, current_team, caf_end_team, caf_change_team
 
   type team_type
     integer     :: num_images_
@@ -20,6 +20,11 @@ module team_type_m
         integer,          intent(in),    optional :: new_index
         integer,          intent(out),   optional :: stat
         character(len=*), intent(inout), optional :: errmsg
+    end subroutine
+    module subroutine caf_change_team(team)
+        type(team_type), target, intent(in) :: team
+    end subroutine
+    module subroutine caf_end_team()
     end subroutine
   end interface
 
