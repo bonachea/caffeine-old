@@ -13,6 +13,7 @@ submodule(coarray_m) coarray_s
     type :: posix_coarray_t
         type(c_ptr)       :: base
         integer(c_size_t) :: length
+        integer(c_size_t) :: bytes_per_image
     end type
 
 contains
@@ -93,7 +94,7 @@ contains
         return_data: block
             type(coarray_t)       :: returnval
             type(posix_coarray_t) :: reserved_data  
-            reserved_data = posix_coarray_t(sharedmem_addr, total_bytes) 
+            reserved_data = posix_coarray_t(sharedmem_addr, total_bytes, bytes_per_image) 
             returnval%mem = c_loc(shmptr(1,caf_this_image()))
             returnval%reserved = transfer(reserved_data, returnval%reserved, size(returnval%reserved))
             caf_allocate  = returnval
@@ -108,6 +109,14 @@ contains
 
         rtncode = munmap(details%base, details%length)
         if (rtncode == -1) call fatal_syscall_error('munmap')
+    end procedure
+
+    module procedure caf_getptr
+        type(posix_coarray_t)  :: details
+        integer(int8), pointer :: memptr(:,:)
+        details = transfer (coarray%reserved, details)
+        call c_f_pointer(details%base, memptr, [details%bytes_per_image, details%bytes_per_image/details%length])
+        caf_getptr = c_loc(memptr(1,coindex))
     end procedure
 
 end submodule

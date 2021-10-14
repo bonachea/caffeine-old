@@ -18,6 +18,22 @@ program example_coarray
 
     call print_matrix(a)
 
+    call caf_sync_all()
+
+    if (caf_this_image() == 1) then
+        block 
+            integer i
+            type(c_ptr) coindx_ptr
+            integer, pointer :: co_a(:,:)
+            print *, ''
+            do i = 1, caf_num_images()
+                coindx_ptr = caf_getptr(co, i)
+                call c_f_pointer(coindx_ptr, co_a, a_shape)
+                print *, 'value of a(1,1) on image', i, 'is', co_a(1,1)    
+            end do
+        end block
+    end if
+
     call caf_deallocate(co)
     call decaffeinate()
 
