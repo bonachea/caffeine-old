@@ -24,4 +24,11 @@ contains
   module procedure this_image_coarray_dim_team
   end procedure
 
+  module procedure num_images_bindc
+    num_images_bindc = current_team%num_images_
+  end procedure
+  module procedure this_image_bindc
+    this_image_bindc = current_team%this_image_
+  end procedure
+
 end submodule image_enumeration_s

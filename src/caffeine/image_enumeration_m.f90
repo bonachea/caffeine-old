@@ -44,4 +44,12 @@ module image_enumeration_m
 
   end interface
 
+  interface
+    pure integer module function num_images_bindc() bind(c,name='caf_num_images')
+    end function
+
+    pure integer module function this_image_bindc() bind(c,name='caf_this_image')
+    end function
+  end interface
+
 end module image_enumeration_m
