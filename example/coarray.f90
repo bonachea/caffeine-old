@@ -3,7 +3,7 @@ program example_coarray
     use iso_c_binding
     implicit none
 
-    class(coarray_t), allocatable :: co
+    type(coarray_t) :: co
     integer, pointer :: a(:,:)
     integer :: a_shape(2) 
 
