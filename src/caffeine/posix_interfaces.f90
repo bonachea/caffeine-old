@@ -112,4 +112,19 @@ contains
         write(output_str, "(A,'_',A)") trim(output_str), trim(suffix) // c_null_char
     end subroutine
 
+    subroutine get_current_shm_path(output_str) bind(c, name='get_current_shm_path')
+        character(kind=c_char,len=1), intent(out) :: output_str(255) 
+
+        character(kind=c_char,len=255) :: tmp1
+        character(kind=c_char,len=1)   :: tmp2
+        integer i
+
+        output_str(:) = c_null_char
+        tmp2 = c_null_char
+        call get_shm_path(tmp1,tmp2)
+        do i = 1, 254
+            output_str(i) = tmp1(i:i)
+        end do
+    end subroutine
+
 end module
