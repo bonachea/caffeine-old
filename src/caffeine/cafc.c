@@ -151,6 +151,16 @@ signal_action (int signo, siginfo_t * info, void * context)
 		errno  = 0;
 		int rc = waitpid (info->si_pid, &wstatus, 0);
 
+		// check if the process we're receiving a signal about is actually one of our image processes
+		bool relevant = false;
+		for (size_t i = 0; i < module.nchildprocs; i++) {
+			if (module.child_pids[i] == info->si_pid) {
+				relevant = true;
+				break;
+			}
+		}
+		if (!relevant) return;
+
 		if (rc == -1) {
 			// `waitpid` failed.
 			// This should never happen, but we might as well produce a message if it does.
