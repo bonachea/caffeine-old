@@ -6,9 +6,11 @@ module coarray_m
     private
     public :: caf_allocate, caf_deallocate, coarray_t, caf_getptr
 
+    integer, parameter :: coarray_padding = 56
+
     type, bind(c) :: coarray_t
-        type(c_ptr)   :: mem
-        integer(int8) :: reserved(56)
+        type(c_ptr)   :: mem 
+        integer(int8) :: reserved(coarray_padding)
     end type
 
     interface

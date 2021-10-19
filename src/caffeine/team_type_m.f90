@@ -10,7 +10,7 @@ module team_type_m
     integer     :: this_image_
     integer     :: sibling_id
     type(c_ptr) :: barrier 
-    type(team_type), pointer :: parent_team
+    type(team_type), pointer :: parent_team => null()
   end type
 
   interface
@@ -21,11 +21,14 @@ module team_type_m
         integer,          intent(out),   optional :: stat
         character(len=*), intent(inout), optional :: errmsg
     end subroutine
+
     module subroutine caf_change_team(team) 
         type(team_type), target, intent(in) :: team
     end subroutine
+
     module subroutine caf_end_team() 
     end subroutine
+
   end interface
 
   type(team_type), pointer :: current_team
