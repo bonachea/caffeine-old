@@ -85,6 +85,7 @@ contains
             end subroutine
         end interface
 
+        call caf_sync_all
         call begin_termination
         call caf_sync_all
     end procedure
