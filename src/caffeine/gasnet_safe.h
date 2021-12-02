@@ -4,8 +4,9 @@
  * Terms of use are as specified in license.txt
  */
 
-#include <gasnetex.h>
+#ifndef _GASNET_SAFE_
 #define _GASNET_SAFE_
+#include <gasnetex.h>
 
 /* Macro to check return codes and terminate with useful message. */
 #define GASNET_SAFE(fncall) do {                                     \
@@ -20,3 +21,4 @@
       gasnet_exit(_retval);                                          \
     }                                                                \
   } while(0)
+#endif
